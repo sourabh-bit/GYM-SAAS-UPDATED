@@ -1,0 +1,7 @@
+project_id = "flhlgtyktpisjexpjdlb"
+
+[functions.send-member-invite]
+verify_jwt = true
+
+[functions.member-signup]
+verify_jwt = false

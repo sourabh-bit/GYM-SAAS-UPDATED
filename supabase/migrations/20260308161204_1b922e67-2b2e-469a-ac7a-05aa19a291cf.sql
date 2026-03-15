@@ -1,0 +1,1 @@
+ALTER TABLE public.members ADD COLUMN trainer_id uuid REFERENCES public.trainers(id) ON DELETE SET NULL DEFAULT NULL;
