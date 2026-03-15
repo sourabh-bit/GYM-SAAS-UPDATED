@@ -1,13 +1,12 @@
 ﻿import { createClient } from "npm:@supabase/supabase-js@2";
+import { buildCorsHeaders } from "../_shared/cors.ts";
 
 const FUNCTION_VERSION = "2026-03-15.9";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+const buildHeaders = (req?: Request) => ({
+  ...buildCorsHeaders(req),
   "X-Fitness-AI-Version": FUNCTION_VERSION,
-};
+});
 
 const REFUSAL_MESSAGE =
   "I only answer gym and fitness related questions. Ask me about workouts, diet, or training.";
@@ -904,6 +903,7 @@ const buildMessages = (
 };
 
 Deno.serve(async (req) => {
+  const corsHeaders = buildHeaders(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }

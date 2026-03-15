@@ -45,6 +45,19 @@ type WorkoutPlanSections = {
 const STORAGE_KEY = "fitcore:fitness_ai:messages";
 const PREF_KEY = "fitcore:fitness_ai:lang";
 
+const readScreenshotFlags = () => {
+  if (typeof window === "undefined") {
+    return { isScreenshot: false, autoOpen: false, demoConversation: false };
+  }
+  const params = new URLSearchParams(window.location.search);
+  const coachParam = params.get("coach");
+  return {
+    isScreenshot: params.get("screenshot") === "1",
+    autoOpen: coachParam === "open" || coachParam === "demo",
+    demoConversation: coachParam === "demo",
+  };
+};
+
 const DEMO_RESPONSES: Record<string, string> = {
   "beginner chest workout": `Workout Level: Beginner
 Goal: Muscle Gain
@@ -434,7 +447,8 @@ const isShortList = (items: string[]) =>
   items.length > 0 && items.length <= 4 && items.every((item) => item.length <= 48);
 
 const FitnessAiChatBubble = ({ isDemoMode = false }: FitnessAiChatBubbleProps) => {
-  const [open, setOpen] = useState(false);
+  const screenshotFlags = useMemo(() => readScreenshotFlags(), []);
+  const [open, setOpen] = useState(screenshotFlags.autoOpen);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -447,13 +461,52 @@ const FitnessAiChatBubble = ({ isDemoMode = false }: FitnessAiChatBubbleProps) =
   const messagesRef = useRef<ChatMessage[]>([]);
   const requestIdRef = useRef(0);
   const typingQueuesRef = useRef<Record<string, { queue: string[]; running: boolean }>>({});
+  const showTrigger = !screenshotFlags.isScreenshot;
+
+  useEffect(() => {
+    if (screenshotFlags.autoOpen) {
+      setOpen(true);
+    } else if (screenshotFlags.isScreenshot) {
+      setOpen(false);
+    }
+  }, [screenshotFlags.autoOpen, screenshotFlags.isScreenshot]);
 
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (!screenshotFlags.isScreenshot || !screenshotFlags.demoConversation) return;
+    if (messagesRef.current.length > 0) return;
+    const seededMessages: ChatMessage[] = [
+      {
+        id: createId(),
+        role: "assistant",
+        content:
+          "Hey! I’m your Fitness AI Coach. Ask me about workouts, diet plans, or exercise form.",
+        status: "final",
+        createdAt: Date.now(),
+      },
+      {
+        id: createId(),
+        role: "user",
+        content: "Give me a beginner chest workout.",
+        createdAt: Date.now() + 1,
+      },
+      {
+        id: createId(),
+        role: "assistant",
+        content:
+          "Sure! Bench Press 3x8, Incline Dumbbell Press 3x10, Cable Fly 3x12. Rest 60-90s. Want a full week split?",
+        status: "final",
+        createdAt: Date.now() + 2,
+      },
+    ];
+    setMessages(seededMessages);
+  }, [screenshotFlags.isScreenshot, screenshotFlags.demoConversation]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || screenshotFlags.isScreenshot) return;
     try {
       const stored = window.localStorage.getItem(STORAGE_KEY);
       if (stored) {
@@ -469,25 +522,25 @@ const FitnessAiChatBubble = ({ isDemoMode = false }: FitnessAiChatBubbleProps) =
     } catch {
       // ignore storage errors
     }
-  }, []);
+  }, [screenshotFlags.isScreenshot]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || screenshotFlags.isScreenshot) return;
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
     } catch {
       // ignore storage errors
     }
-  }, [messages]);
+  }, [messages, screenshotFlags.isScreenshot]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || screenshotFlags.isScreenshot) return;
     try {
       window.localStorage.setItem(PREF_KEY, languagePreference);
     } catch {
       // ignore storage errors
     }
-  }, [languagePreference]);
+  }, [languagePreference, screenshotFlags.isScreenshot]);
 
   useEffect(() => {
     if (!open) return;
@@ -1116,18 +1169,20 @@ const FitnessAiChatBubble = ({ isDemoMode = false }: FitnessAiChatBubbleProps) =
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <button
-          type="button"
-          className="fixed bottom-20 right-4 z-50 flex items-center gap-2 rounded-full bg-gradient-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-luxury transition-transform hover:scale-[1.02] active:scale-[0.98] sm:bottom-8"
-          aria-label="Open Fitness AI Coach"
-        >
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-black/15">
-            <Sparkles className="h-4 w-4" />
-          </div>
-          <span className="hidden sm:inline">Fitness AI Coach</span>
-        </button>
-      </SheetTrigger>
+      {showTrigger && (
+        <SheetTrigger asChild>
+          <button
+            type="button"
+            className="fixed bottom-20 right-4 z-50 flex items-center gap-2 rounded-full bg-gradient-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-luxury transition-transform hover:scale-[1.02] active:scale-[0.98] sm:bottom-8"
+            aria-label="Open Fitness AI Coach"
+          >
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-black/15">
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <span className="hidden sm:inline">Fitness AI Coach</span>
+          </button>
+        </SheetTrigger>
+      )}
 
       <SheetContent
         side="right"

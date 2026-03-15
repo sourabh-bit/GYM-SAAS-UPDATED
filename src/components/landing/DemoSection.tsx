@@ -39,7 +39,7 @@ const DemoSection = () => {
               <span className="text-[9px] sm:text-xs font-semibold text-primary uppercase tracking-wider">Live Demo</span>
             </div>
             <h2 className="font-display text-[22px] sm:text-3xl lg:text-5xl font-bold mb-2 sm:mb-4">
-              See it in action â€”
+              See it in action -
               <br />
               <span className="text-gradient">every role, every dashboard</span>
             </h2>
@@ -91,5 +91,6 @@ const DemoSection = () => {
 };
 
 export default DemoSection;
+
 
 

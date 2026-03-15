@@ -1,10 +1,10 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { buildCorsHeaders } from "../_shared/cors.ts";
+import { rateLimit } from "../_shared/rate-limit.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const buildHeaders = (req?: Request) => ({
+  ...buildCorsHeaders(req),
+});
 
 // Anti-cheat constants
 const DAILY_XP_CAP = 500; // Max XP earnable per day
@@ -164,7 +164,14 @@ const getDayStartUtcMsForLocalDate = (
   return Date.UTC(year, month - 1, day) + timezoneOffsetMinutes * 60 * 1000;
 };
 
+const getClientIp = (req: Request) => {
+  const forwardedFor = req.headers.get("x-forwarded-for");
+  if (forwardedFor) return forwardedFor.split(",")[0].trim();
+  return req.headers.get("cf-connecting-ip") || req.headers.get("x-real-ip") || "unknown";
+};
+
 Deno.serve(async (req) => {
+  const corsHeaders = buildHeaders(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -203,6 +210,17 @@ Deno.serve(async (req) => {
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const rlKey = user?.id
+      ? `challenge:rl:user:${user.id}`
+      : `challenge:rl:ip:${getClientIp(req)}`;
+    const rl = await rateLimit(rlKey, 30, 60);
+    if (!rl.allowed) {
+      return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
+        status: 429,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

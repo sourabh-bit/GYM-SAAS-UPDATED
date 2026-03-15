@@ -23,6 +23,8 @@ const Demo = () => {
   const dashboardMode: "gym" | "member" =
     searchParams.get("mode") === "member" ? "member" : "gym";
 
+  const isScreenshot = searchParams.get("screenshot") === "1";
+
   const activeOwnerPage = searchParams.get("ownerPage") || "dashboard";
   const activeMemberPage = searchParams.get("memberPage") || "home";
 
@@ -77,64 +79,66 @@ const Demo = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
-      <div className="border-b border-border bg-glass-strong px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 overflow-x-hidden">
-        <div className="flex items-center justify-between gap-2 min-w-0 w-full sm:w-auto">
-          <div className="flex items-center gap-3 min-w-0">
-            <Link
-              to="/"
-              className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors min-w-0 shrink"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span className="text-sm hidden sm:inline truncate">Back to FitCore</span>
-            </Link>
-            <div className="h-5 w-px bg-border" />
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              <span className="text-xs font-medium text-muted-foreground truncate hidden min-[380px]:inline">
-                Interactive Demo
-              </span>
+      {!isScreenshot && (
+        <div className="border-b border-border bg-glass-strong px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 overflow-x-hidden">
+          <div className="flex items-center justify-between gap-2 min-w-0 w-full sm:w-auto">
+            <div className="flex items-center gap-3 min-w-0">
+              <Link
+                to="/"
+                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors min-w-0 shrink"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span className="text-sm hidden sm:inline truncate">Back to FitCore</span>
+              </Link>
+              <div className="h-5 w-px bg-border" />
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                <span className="text-xs font-medium text-muted-foreground truncate hidden min-[380px]:inline">
+                  Interactive Demo
+                </span>
+              </div>
             </div>
-          </div>
-          <Link to="/signup" className="sm:hidden shrink-0">
-            <Button variant="glow" size="sm" className="rounded-lg px-3 h-8 gap-1 text-[11px]">
-              Start Trial <ArrowRight className="w-3 h-3" />
-            </Button>
-          </Link>
-        </div>
-
-        <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
-          <div className="bg-secondary/40 border border-border rounded-xl p-1 flex items-center w-full sm:w-auto">
-            <button
-              onClick={() => setDashboardMode("gym")}
-              className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors flex-1 sm:flex-none ${
-                dashboardMode === "gym"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <span className="sm:hidden">Gym</span>
-              <span className="hidden sm:inline">Gym Dashboard</span>
-            </button>
-            <button
-              onClick={() => setDashboardMode("member")}
-              className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors flex-1 sm:flex-none ${
-                dashboardMode === "member"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <span className="sm:hidden">Member</span>
-              <span className="hidden sm:inline">Member Dashboard</span>
-            </button>
+            <Link to="/signup" className="sm:hidden shrink-0">
+              <Button variant="glow" size="sm" className="rounded-lg px-3 h-8 gap-1 text-[11px]">
+                Start Trial <ArrowRight className="w-3 h-3" />
+              </Button>
+            </Link>
           </div>
 
-          <Link to="/signup" className="hidden sm:block">
-            <Button variant="glow" size="sm" className="rounded-lg px-5 gap-1.5 text-xs">
-              Start Free Trial <ArrowRight className="w-3 h-3" />
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+            <div className="bg-secondary/40 border border-border rounded-xl p-1 flex items-center w-full sm:w-auto">
+              <button
+                onClick={() => setDashboardMode("gym")}
+                className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors flex-1 sm:flex-none ${
+                  dashboardMode === "gym"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <span className="sm:hidden">Gym</span>
+                <span className="hidden sm:inline">Gym Dashboard</span>
+              </button>
+              <button
+                onClick={() => setDashboardMode("member")}
+                className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors flex-1 sm:flex-none ${
+                  dashboardMode === "member"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <span className="sm:hidden">Member</span>
+                <span className="hidden sm:inline">Member Dashboard</span>
+              </button>
+            </div>
+
+            <Link to="/signup" className="hidden sm:block">
+              <Button variant="glow" size="sm" className="rounded-lg px-5 gap-1.5 text-xs">
+                Start Free Trial <ArrowRight className="w-3 h-3" />
+              </Button>
+            </Link>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="flex-1 overflow-hidden">
         <AnimatePresence mode="wait">

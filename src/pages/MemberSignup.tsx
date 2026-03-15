@@ -9,8 +9,6 @@ import { toast } from "sonner";
 
 interface EmailCheckResult {
   exists: boolean;
-  member_name?: string;
-  gym_name?: string;
   already_registered?: boolean;
 }
 
@@ -153,7 +151,7 @@ const MemberSignup = () => {
               {emailCheck?.exists && (
                 <div className="bg-primary/10 border border-primary/20 rounded-lg px-3 py-2">
                   <p className="text-xs text-primary font-medium">
-                    ✓ Found! You're registered at <span className="font-bold">{emailCheck.gym_name}</span> as <span className="font-bold capitalize">{emailCheck.member_name}</span>
+                    Email verified. You can create your member account.
                   </p>
                 </div>
               )}

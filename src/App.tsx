@@ -31,6 +31,9 @@ const MemberAchievements = lazy(() => import("./pages/member/MemberAchievements"
 const MemberLeaderboard = lazy(() => import("./pages/member/MemberLeaderboard"));
 const MemberBilling = lazy(() => import("./pages/member/MemberBilling"));
 const MemberProfile = lazy(() => import("./pages/member/MemberProfile"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsOfService = lazy(() => import("./pages/TermsOfService"));
+const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminGyms = lazy(() => import("./pages/admin/AdminGyms"));
 const AdminBilling = lazy(() => import("./pages/admin/AdminBilling"));
@@ -85,6 +88,10 @@ const App = () => (
               <Route path="/member-signup" element={<MemberSignup />} />
               <Route path="/member-login" element={<MemberLogin />} />
               <Route path="/member-reset-password" element={<MemberResetPassword />} />
+              {/* Legal */}
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/terms" element={<TermsOfService />} />
+              <Route path="/refund" element={<RefundPolicy />} />
               {/* Gym Owner Dashboard */}
               <Route path="/dashboard" element={<OwnerProtectedRoute><DashboardHome /></OwnerProtectedRoute>} />
               <Route path="/dashboard/members" element={<OwnerProtectedRoute><MembersPage /></OwnerProtectedRoute>} />

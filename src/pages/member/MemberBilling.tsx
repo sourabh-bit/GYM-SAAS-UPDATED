@@ -67,11 +67,13 @@ const MemberBilling = () => {
         theme: { color: "#16a34a" },
       });
 
-      const { error: verifyError } = await supabase.functions.invoke("razorpay-verify-payment", {
+      const { data: verifyData, error: verifyError } = await supabase.functions.invoke("razorpay-verify-payment", {
         body: { ...response, intent_id: data.intent_id },
       });
       if (verifyError) throw verifyError;
-      toast.success("Payment successful");
+      toast.success(verifyData?.pending_confirmation
+        ? "Payment submitted. Confirmation pending."
+        : "Payment successful");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Payment failed";
       toast.error(message);
@@ -103,11 +105,13 @@ const MemberBilling = () => {
         theme: { color: "#16a34a" },
       });
 
-      const { error: verifyError } = await supabase.functions.invoke("razorpay-verify-payment", {
+      const { data: verifyData, error: verifyError } = await supabase.functions.invoke("razorpay-verify-payment", {
         body: { ...response, context: "subscription" },
       });
       if (verifyError) throw verifyError;
-      toast.success("Autopay enabled");
+      toast.success(verifyData?.pending_confirmation
+        ? "Autopay setup submitted. Confirmation pending."
+        : "Autopay enabled");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Autopay setup failed";
       toast.error(message);

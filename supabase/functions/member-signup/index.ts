@@ -1,12 +1,10 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { buildCorsHeaders, resolveAllowedOrigin } from "../_shared/cors.ts";
+import { rateLimit } from "../_shared/rate-limit.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
-
-const RATE_LIMIT_BUCKETS = new Map<string, { count: number; resetAt: number }>();
+const buildHeaders = (req?: Request) => ({
+  ...buildCorsHeaders(req),
+});
 
 const getClientIp = (req: Request) => {
   const forwardedFor = req.headers.get("x-forwarded-for");
@@ -18,20 +16,8 @@ const getClientIp = (req: Request) => {
   );
 };
 
-const isRateLimited = (key: string, limit: number, windowMs: number) => {
-  const now = Date.now();
-  const bucket = RATE_LIMIT_BUCKETS.get(key);
-  if (!bucket || bucket.resetAt <= now) {
-    RATE_LIMIT_BUCKETS.set(key, { count: 1, resetAt: now + windowMs });
-    return false;
-  }
-  if (bucket.count >= limit) return true;
-  bucket.count += 1;
-  RATE_LIMIT_BUCKETS.set(key, bucket);
-  return false;
-};
-
 Deno.serve(async (req) => {
+  const corsHeaders = buildHeaders(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -46,17 +32,21 @@ Deno.serve(async (req) => {
     const checkOnlyKey = `check_only:${clientIp}`;
     const signupKey = `signup:${clientIp}:${normalizedEmail || "missing-email"}`;
     if (check_only) {
-      if (isRateLimited(checkOnlyKey, 25, 5 * 60 * 1000)) {
+      const rl = await rateLimit(checkOnlyKey, 25, 5 * 60);
+      if (!rl.allowed) {
         return new Response(
           JSON.stringify({ error: "Too many requests. Please try again shortly." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-    } else if (isRateLimited(signupKey, 8, 10 * 60 * 1000)) {
-      return new Response(
-        JSON.stringify({ error: "Too many signup attempts. Please wait before trying again." }),
-        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    } else {
+      const rl = await rateLimit(signupKey, 8, 10 * 60);
+      if (!rl.allowed) {
+        return new Response(
+          JSON.stringify({ error: "Too many signup attempts. Please wait before trying again." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -81,18 +71,18 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (memberRecord && !memberRecord.user_id) {
-        const { data: gymData } = await adminClient
-          .from("gyms")
-          .select("name")
-          .eq("id", memberRecord.gym_id)
-          .single();
-
         return new Response(
           JSON.stringify({
             exists: true,
-            member_name: memberRecord.name,
-            gym_name: gymData?.name ?? "Your Gym",
+            already_registered: false,
           }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (memberRecord && memberRecord.user_id) {
+        return new Response(
+          JSON.stringify({ exists: false, already_registered: true }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -155,7 +145,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const origin = req.headers.get("origin") || supabaseUrl;
+    const origin = resolveAllowedOrigin(req.headers.get("origin"), Deno.env.get("PUBLIC_SITE_URL") || supabaseUrl);
 
     const { data: signUpData, error: signUpError } = await authClient.auth.signUp({
       email: normalizedEmail,

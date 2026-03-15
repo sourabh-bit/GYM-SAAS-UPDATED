@@ -31,13 +31,13 @@ const CTASection = () => {
             </div>
 
             <h2 className="font-display text-[20px] sm:text-3xl lg:text-5xl font-bold mb-2 sm:mb-4 relative z-10">
-              Ready to unify
+              Ready to transform
               <br />
-              <span className="text-gradient">your fitness ecosystem?</span>
+              <span className="text-gradient">your gym?</span>
             </h2>
 
             <p className="text-[12px] sm:text-base lg:text-lg text-muted-foreground mb-4 sm:mb-6 max-w-lg mx-auto relative z-10">
-              One platform for owners, members & admins — start free today.
+              Start managing members, workouts, and progress in one powerful system.
             </p>
 
             <div className="flex flex-wrap justify-center gap-2 sm:gap-4 mb-5 sm:mb-8 relative z-10">

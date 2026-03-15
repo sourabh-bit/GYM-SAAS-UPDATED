@@ -1,12 +1,19 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { buildCorsHeaders, resolveAllowedOrigin } from "../_shared/cors.ts";
+import { rateLimit } from "../_shared/rate-limit.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+const buildHeaders = (req?: Request) => ({
+  ...buildCorsHeaders(req),
+});
+
+const getClientIp = (req: Request) => {
+  const forwardedFor = req.headers.get("x-forwarded-for");
+  if (forwardedFor) return forwardedFor.split(",")[0].trim();
+  return req.headers.get("cf-connecting-ip") || req.headers.get("x-real-ip") || "unknown";
 };
 
 Deno.serve(async (req) => {
+  const corsHeaders = buildHeaders(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -54,6 +61,15 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const rlKey = user?.id ? `invite:rl:user:${user.id}` : `invite:rl:ip:${getClientIp(req)}`;
+    const rl = await rateLimit(rlKey, 10, 60);
+    if (!rl.allowed) {
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded" }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -109,7 +125,7 @@ Deno.serve(async (req) => {
       .eq("id", memberRecord.gym_id)
       .single();
 
-    const origin = req.headers.get("origin") || supabaseUrl;
+    const origin = resolveAllowedOrigin(req.headers.get("origin"), Deno.env.get("PUBLIC_SITE_URL") || supabaseUrl);
     const signupUrl = `${origin}/member-signup?email=${encodeURIComponent(normalizedEmail)}`;
 
     // Send invite email using Supabase's built-in email via admin API

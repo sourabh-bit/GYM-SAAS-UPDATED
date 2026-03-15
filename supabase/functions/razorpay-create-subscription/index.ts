@@ -1,5 +1,16 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders, mapPlanInterval, razorpayFetch, requireEnv, toPaise } from "../_shared/razorpay.ts";
+import { mapPlanInterval, razorpayFetch, requireEnv, toPaise } from "../_shared/razorpay.ts";
+import { buildCorsHeaders } from "../_shared/cors.ts";
+import { rateLimit } from "../_shared/rate-limit.ts";
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const getClientIp = (req: Request) => {
+  const forwardedFor = req.headers.get("x-forwarded-for");
+  if (forwardedFor) return forwardedFor.split(",")[0].trim();
+  return req.headers.get("cf-connecting-ip") || req.headers.get("x-real-ip") || "unknown";
+};
 
 type RazorpayPlanResponse = {
   id: string;
@@ -19,6 +30,7 @@ type RazorpaySubscriptionResponse = {
 };
 
 Deno.serve(async (req) => {
+  const corsHeaders = buildCorsHeaders(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -54,7 +66,7 @@ Deno.serve(async (req) => {
     }
 
     const { member_id } = await req.json();
-    if (!member_id) {
+    if (!member_id || !UUID_RE.test(String(member_id))) {
       return new Response(JSON.stringify({ error: "member_id is required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -81,6 +93,15 @@ Deno.serve(async (req) => {
     if (!canManage && !isSelf) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const rlKey = user?.id ? `pay:sub:user:${user.id}` : `pay:sub:ip:${getClientIp(req)}`;
+    const rl = await rateLimit(rlKey, 5, 60);
+    if (!rl.allowed) {
+      return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
+        status: 429,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

@@ -1,5 +1,16 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders, requireEnv, razorpayFetch, toPaise } from "../_shared/razorpay.ts";
+import { requireEnv, razorpayFetch, toPaise } from "../_shared/razorpay.ts";
+import { buildCorsHeaders } from "../_shared/cors.ts";
+import { rateLimit } from "../_shared/rate-limit.ts";
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const getClientIp = (req: Request) => {
+  const forwardedFor = req.headers.get("x-forwarded-for");
+  if (forwardedFor) return forwardedFor.split(",")[0].trim();
+  return req.headers.get("cf-connecting-ip") || req.headers.get("x-real-ip") || "unknown";
+};
 
 type RazorpayPaymentLinkResponse = {
   id: string;
@@ -8,6 +19,7 @@ type RazorpayPaymentLinkResponse = {
 };
 
 Deno.serve(async (req) => {
+  const corsHeaders = buildCorsHeaders(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -43,7 +55,7 @@ Deno.serve(async (req) => {
     }
 
     const { member_id, amount } = await req.json();
-    if (!member_id) {
+    if (!member_id || !UUID_RE.test(String(member_id))) {
       return new Response(JSON.stringify({ error: "member_id is required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -74,12 +86,32 @@ Deno.serve(async (req) => {
       });
     }
 
-    let payable = Number(amount);
-    if (!payable || payable <= 0) {
-      payable = Number(member.due_amount || 0);
+    const rlKey = user?.id ? `pay:link:user:${user.id}` : `pay:link:ip:${getClientIp(req)}`;
+    const rl = await rateLimit(rlKey, 5, 60);
+    if (!rl.allowed) {
+      return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
+
+    const parsedAmount = amount === undefined || amount === null ? null : Number(amount);
+    if (parsedAmount !== null && (!Number.isFinite(parsedAmount) || parsedAmount <= 0)) {
+      return new Response(JSON.stringify({ error: "Invalid amount" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    let payable = parsedAmount ?? Number(member.due_amount || 0);
     if (!payable || payable <= 0) {
       return new Response(JSON.stringify({ error: "No due amount to collect" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (member.due_amount && payable > Number(member.due_amount || 0)) {
+      return new Response(JSON.stringify({ error: "Amount exceeds due balance" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

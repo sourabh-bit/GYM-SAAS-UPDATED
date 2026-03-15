@@ -1,7 +1,16 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders, hmacSha256Hex, requireEnv } from "../_shared/razorpay.ts";
+import { hmacSha256Hex, requireEnv } from "../_shared/razorpay.ts";
+import { buildCorsHeaders } from "../_shared/cors.ts";
+import { rateLimit } from "../_shared/rate-limit.ts";
+
+const getClientIp = (req: Request) => {
+  const forwardedFor = req.headers.get("x-forwarded-for");
+  if (forwardedFor) return forwardedFor.split(",")[0].trim();
+  return req.headers.get("cf-connecting-ip") || req.headers.get("x-real-ip") || "unknown";
+};
 
 Deno.serve(async (req) => {
+  const corsHeaders = buildCorsHeaders(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -16,11 +25,9 @@ Deno.serve(async (req) => {
     }
 
     const supabaseUrl = requireEnv("SUPABASE_URL");
-    const serviceRoleKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
     const anonKey = requireEnv("SUPABASE_ANON_KEY");
     const razorpaySecret = requireEnv("RAZORPAY_KEY_SECRET");
 
-    const adminClient = createClient(supabaseUrl, serviceRoleKey);
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -42,13 +49,21 @@ Deno.serve(async (req) => {
       razorpay_order_id,
       razorpay_subscription_id,
       razorpay_signature,
-      intent_id,
       context,
     } = await req.json();
 
     if (!razorpay_payment_id || !razorpay_signature) {
       return new Response(JSON.stringify({ error: "Invalid payment payload" }), {
         status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const rlKey = user?.id ? `pay:verify:user:${user.id}` : `pay:verify:ip:${getClientIp(req)}`;
+    const rl = await rateLimit(rlKey, 12, 60);
+    if (!rl.allowed) {
+      return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
+        status: 429,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -73,55 +88,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (razorpay_order_id) {
-      const { data: intent, error: intentError } = await adminClient
-        .from("payment_intents")
-        .select("id, member_id, amount, status")
-        .eq("gateway_order_id", razorpay_order_id)
-        .maybeSingle();
-
-      if (intentError || !intent) {
-        return new Response(JSON.stringify({ error: "Payment intent not found" }), {
-          status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      if (intent.status !== "captured") {
-        await adminClient.from("payment_intents").update({
-          status: "captured",
-          updated_at: new Date().toISOString(),
-        }).eq("id", intent.id);
-      }
-
-      const { error: recordError } = await adminClient.rpc("record_gateway_payment", {
-        p_member_id: intent.member_id,
-        p_amount: intent.amount,
-        p_gateway: "razorpay",
-        p_gateway_payment_id: razorpay_payment_id,
-        p_gateway_order_id: razorpay_order_id,
-        p_gateway_subscription_id: null,
-        p_extend_membership: false,
-      });
-      if (recordError) {
-        return new Response(JSON.stringify({ error: recordError.message || "Failed to record payment" }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    } else if (razorpay_subscription_id) {
-      await adminClient.from("payment_subscriptions").update({
-        status: "active",
-        updated_at: new Date().toISOString(),
-      }).eq("gateway_subscription_id", razorpay_subscription_id);
-
-      await adminClient.from("members").update({
-        autopay_enabled: true,
-        gateway_subscription_id: razorpay_subscription_id,
-      }).eq("gateway_subscription_id", razorpay_subscription_id);
-    }
-
-    return new Response(JSON.stringify({ success: true, context: context || "payment" }), {
+    return new Response(JSON.stringify({
+      success: true,
+      context: context || "payment",
+      pending_confirmation: true,
+    }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

@@ -1,21 +1,22 @@
-import { Users, Receipt, CalendarDays, TrendingUp, Shield, Dumbbell, Trophy, Bell, BarChart3, Smartphone, Zap, Globe, UserCheck, Activity, Target } from "lucide-react";
+import { Users, Receipt, CalendarDays, TrendingUp, Shield, Dumbbell, Trophy, Bell, BarChart3, Smartphone, Zap, Globe, UserCheck, Activity, Target, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import ScrollReveal from "../ScrollReveal";
 
 const ownerFeatures = [
-  { icon: Users, title: "Member CRM", desc: "Full profiles, subscriptions, automated onboarding.", stat: "2,847 members" },
-  { icon: Receipt, title: "Smart Billing", desc: "Recurring payments, auto-invoicing & due alerts.", stat: "₹12.5L/mo" },
-  { icon: CalendarDays, title: "Attendance", desc: "One-tap check-in, heatmaps & trend reports.", stat: "156/day" },
-  { icon: TrendingUp, title: "Analytics", desc: "Real-time MRR, churn, retention & growth KPIs.", stat: "+23% growth" },
-  { icon: UserCheck, title: "Trainers", desc: "Assign members, track schedules & performance.", stat: "15 active" },
-  { icon: Bell, title: "Notifications", desc: "Auto-alerts for expiring plans & payments.", stat: "0 missed" },
+  { icon: Users, title: "Member Management", desc: "Profiles, plans, renewals, and member history.", stat: "2,847 members" },
+  { icon: Receipt, title: "Smart Billing", desc: "Autopay, due tracking, and payment follow-ups.", stat: "INR 12.5L/mo" },
+  { icon: CalendarDays, title: "Attendance Tracking", desc: "One-tap check-ins with trend reports.", stat: "156/day" },
+  { icon: TrendingUp, title: "Analytics Dashboard", desc: "Revenue, churn, retention, and growth KPIs.", stat: "+23% growth" },
+  { icon: UserCheck, title: "Coach System", desc: "Assign members, track schedules and performance.", stat: "15 active" },
+  { icon: Bell, title: "Engagement Tools", desc: "Automated alerts and renewal reminders.", stat: "0 missed" },
 ];
 
 const memberFeatures = [
-  { icon: Dumbbell, title: "Workouts", desc: "Log exercises, sets, reps & personal records." },
-  { icon: Trophy, title: "Gamification", desc: "Badges, streaks, leaderboards & challenges." },
-  { icon: Activity, title: "Progress", desc: "Visual charts, body metrics & achievements." },
-  { icon: Target, title: "Goals", desc: "Set targets and track with smart milestones." },
+  { icon: Sparkles, title: "AI Trainer", desc: "Instant guidance for workouts, diet, and form." },
+  { icon: Dumbbell, title: "Workout Programs", desc: "Structured plans with sets, reps, and rest." },
+  { icon: Activity, title: "Progress Tracking", desc: "Charts, body metrics, and PR visibility." },
+  { icon: Trophy, title: "Achievements System", desc: "Badges, streaks, and milestones." },
+  { icon: Target, title: "Member Leadership", desc: "Leaderboards and challenges that build community." },
 ];
 
 const FeaturesSection = () => {
@@ -37,7 +38,7 @@ const FeaturesSection = () => {
               <span className="text-gradient">your fitness business</span>
             </h2>
             <p className="text-[12px] sm:text-sm lg:text-base text-muted-foreground max-w-2xl mx-auto">
-              Whether you own a gym, work out at one, or manage the platform — FitCore has tools for you.
+              Whether you own a gym, work out at one, or manage the platform - FitCore has tools for you.
             </p>
           </div>
         </ScrollReveal>
@@ -93,7 +94,7 @@ const FeaturesSection = () => {
             </div>
           </ScrollReveal>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
             {memberFeatures.map((f, i) => (
               <ScrollReveal key={f.title} delay={i * 0.03}>
                 <div className="group bg-glass border border-glass-bright rounded-lg sm:rounded-2xl p-3 sm:p-5 relative overflow-hidden h-full hover:border-glow-cyan/20 transition-colors duration-200">

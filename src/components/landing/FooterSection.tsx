@@ -1,4 +1,4 @@
-import { Dumbbell, Mail, MapPin, Phone } from "lucide-react";
+﻿import { Dumbbell, Mail, MapPin, Phone } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const footerLinks = {
@@ -8,16 +8,10 @@ const footerLinks = {
     { label: "Demo", href: "/demo", isRoute: true },
     { label: "FAQ", href: "#faq" },
   ],
-  Company: [
-    { label: "About", href: "#" },
-    { label: "Blog", href: "#" },
-    { label: "Careers", href: "#" },
-    { label: "Contact", href: "#" },
-  ],
   Legal: [
-    { label: "Privacy", href: "#" },
-    { label: "Terms", href: "#" },
-    { label: "Security", href: "#" },
+    { label: "Privacy Policy", href: "/privacy", isRoute: true },
+    { label: "Terms of Service", href: "/terms", isRoute: true },
+    { label: "Refund Policy", href: "/refund", isRoute: true },
   ],
 };
 
@@ -36,21 +30,25 @@ const FooterSection = () => {
                 Fit<span className="text-gradient">Core</span>
               </span>
             </Link>
-            <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed max-w-[220px] mb-3 sm:mb-4">
+            <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed max-w-[240px] mb-3 sm:mb-4">
               The all-in-one gym management platform for modern fitness businesses.
             </p>
             <div className="space-y-1.5 sm:space-y-2">
               <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-muted-foreground">
                 <Mail className="w-3 h-3 text-primary" />
-                <span>hello@fitcore.app</span>
+                <a className="hover:text-foreground transition-colors" href="mailto:fitcore3446@gmail.com">
+                  fitcore3446@gmail.com
+                </a>
               </div>
               <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-muted-foreground">
                 <Phone className="w-3 h-3 text-primary" />
-                <span>+91 98765 43210</span>
+                <a className="hover:text-foreground transition-colors" href="tel:+918920135102">
+                  +91 89201 35102
+                </a>
               </div>
               <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-muted-foreground">
                 <MapPin className="w-3 h-3 text-primary" />
-                <span>Bangalore, India</span>
+                <span>Delhi, India</span>
               </div>
             </div>
           </div>
@@ -92,14 +90,10 @@ const FooterSection = () => {
 
         <div className="border-t border-glass pt-4 sm:pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
           <p className="text-[10px] sm:text-xs text-muted-foreground">
-            � {new Date().getFullYear()} FitCore. All rights reserved.
+            © {new Date().getFullYear()} FitCore. All rights reserved.
           </p>
-          <div className="flex gap-3 sm:gap-4">
-            {["Twitter", "LinkedIn", "Instagram", "YouTube"].map((social) => (
-              <a key={social} href="#" className="text-[10px] sm:text-xs text-muted-foreground hover:text-primary transition-colors">
-                {social}
-              </a>
-            ))}
+          <div className="text-[10px] sm:text-xs text-muted-foreground">
+            Reach us anytime for support.
           </div>
         </div>
       </div>
@@ -108,4 +102,5 @@ const FooterSection = () => {
 };
 
 export default FooterSection;
+
 
